@@ -2,7 +2,11 @@
 #include <d3dcompiler.h>
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <d2d1.h>
+#include <dwrite.h>
 
+#pragma comment(lib, "d2d1.lib") 
+#pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -17,8 +21,16 @@ namespace MyDirectX {
     IDXGISwapChain* swapChain = nullptr;
     ID3D11RenderTargetView* renderTargetView = nullptr;
     ID3D11Texture2D* texture2D = nullptr;
+
+    ID2D1Factory* d2dFactory = nullptr; 
+    IDWriteFactory* dwriteFactory = nullptr; 
+    ID2D1RenderTarget* d2dRenderTarget = nullptr; 
+    ID2D1SolidColorBrush* brush = nullptr; 
+    IDWriteTextFormat* textFormat = nullptr;
 }
 
+int CreateTextDevice();
+void onRender();
 int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd);
 int initDirectX(HWND hwnd);
 
@@ -94,6 +106,7 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
 
             MyDirectX::context_->OMSetRenderTargets(1, &MyDirectX::renderTargetView, nullptr);
             MyDirectX::context_->ClearRenderTargetView(MyDirectX::renderTargetView, color);
+            onRender();
             MyDirectX::swapChain->Present(1, 0);
         }
     }
@@ -117,11 +130,12 @@ int initDirectX(HWND hwnd) {
 
     HRESULT hresult = {};
     D3D_FEATURE_LEVEL level = {};
+    UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
     hresult = D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
-        0,
+        creationFlags,
         nullptr,
         0,
         D3D11_SDK_VERSION,
@@ -147,6 +161,114 @@ int initDirectX(HWND hwnd) {
         MessageBox(hwnd, L"DirectXの初期化に失敗したよ", NULL, MB_OK);
         return -1;
     }
+
+    CreateTextDevice();
+
+    HRESULT hr = S_OK;
+
+    IDXGISurface* pBackBuffer = nullptr;
+    hr = MyDirectX::swapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+    if (FAILED(hr)) {
+        MessageBox(hwnd, L"バックバッファ取得失敗", L"エラー", MB_OK);
+        return -1;
+    }
+
+    D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
+        D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED)
+    );
+
+    hr = MyDirectX::d2dFactory->CreateDxgiSurfaceRenderTarget(
+        pBackBuffer,
+        &props,
+        &MyDirectX::d2dRenderTarget
+    );
+
+    pBackBuffer->Release();
+
+    if (FAILED(hr)) {
+        MessageBox(hwnd, L"Direct2D RenderTarget作成失敗", L"エラー", MB_OK);
+        return -1;
+    }
+
+    hr = MyDirectX::d2dRenderTarget->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::White),
+        &MyDirectX::brush
+    );
+
+    if (FAILED(hr)) {
+        MessageBox(hwnd, L"ブラシ作成失敗", L"エラー", MB_OK);
+        return -1;
+    }
     
     return 0;
+}
+
+int CreateTextDevice() {
+    static const WCHAR msc_fontName[] = L"Verdana";
+    static const FLOAT msc_fontSize = 50;
+    HRESULT hr;
+
+    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &MyDirectX::d2dFactory);
+
+    if (SUCCEEDED(hr))
+    {
+        hr = DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED,
+            __uuidof(MyDirectX::dwriteFactory),
+            reinterpret_cast<IUnknown**>(&MyDirectX::dwriteFactory)
+        );
+    }
+    if (SUCCEEDED(hr))
+    {
+
+        hr = MyDirectX::dwriteFactory->CreateTextFormat(
+            msc_fontName,
+            NULL,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            msc_fontSize,
+            L"", //locale
+            &MyDirectX::textFormat
+        );
+    }
+    if (SUCCEEDED(hr))
+    {
+        MyDirectX::textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+
+        MyDirectX::textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+    }
+
+
+
+    return hr;
+}
+
+void onRender() {
+    HRESULT hr;
+    static const WCHAR sc_helloWorld[] = L"Hello, World!";
+
+    D2D1_SIZE_F renderTargetSize = MyDirectX::d2dRenderTarget->GetSize();
+
+    MyDirectX::d2dRenderTarget->BeginDraw();
+
+    MyDirectX::d2dRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+
+    MyDirectX::d2dRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+
+    MyDirectX::d2dRenderTarget->DrawText(
+        sc_helloWorld,
+        ARRAYSIZE(sc_helloWorld) - 1,
+        MyDirectX::textFormat,
+        D2D1::RectF(0, 0, renderTargetSize.width, renderTargetSize.height),
+        MyDirectX::brush
+    );
+
+    hr = MyDirectX::d2dRenderTarget->EndDraw();
+
+    if (hr == D2DERR_RECREATE_TARGET)
+    {
+        hr = S_OK;
+    }
 }
