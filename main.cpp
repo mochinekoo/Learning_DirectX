@@ -1,14 +1,32 @@
 ﻿#include <Windows.h>
+#include <d3dcompiler.h>
+#include <d3d11.h>
+#include <DirectXMath.h>
 
-const int WINDOW_WIDTH = 1280;
-const int WINDOW_HEIGHT = 720;
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+
+namespace {
+    const int WINDOW_WIDTH = 1280;
+    const int WINDOW_HEIGHT = 720;
+}
+
+namespace MyDirectX {
+    ID3D11Device* device_ = nullptr;
+    ID3D11DeviceContext* context_ = nullptr;
+    IDXGISwapChain* swapChain = nullptr;
+    ID3D11RenderTargetView* renderTargetView = nullptr;
+    ID3D11Texture2D* texture2D = nullptr;
+}
 
 int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd);
+int initDirectX(HWND hwnd);
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
     if (initWindow(hInstance, hPrevInstance, lpCmdLine, nShowCmd) == -1) {
         return -1;
     }
+
     return 0;
 }
 
@@ -57,6 +75,10 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
         return -1;
     }
 
+    if (initDirectX(hwnd)) {
+        return -1;
+    }
+
     ShowWindow(hwnd, nShowCmd); //ウインドウを表示
     UpdateWindow(hwnd);
 
@@ -67,7 +89,64 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+        else {
+            float color[4] = { 0, 0, 0, 1.0f };
+
+            MyDirectX::context_->OMSetRenderTargets(1, &MyDirectX::renderTargetView, nullptr);
+            MyDirectX::context_->ClearRenderTargetView(MyDirectX::renderTargetView, color);
+            MyDirectX::swapChain->Present(1, 0);
+        }
     }
 
+    return 0;
+}
+
+int initDirectX(HWND hwnd) {
+    DXGI_SWAP_CHAIN_DESC desc = {};
+    desc.BufferDesc.Width = WINDOW_WIDTH;
+    desc.BufferDesc.Height = WINDOW_HEIGHT;
+    desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.Windowed = TRUE;
+    desc.OutputWindow = hwnd;
+    desc.BufferCount = 1;
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.BufferDesc.RefreshRate.Numerator = 60;
+    desc.BufferDesc.RefreshRate.Denominator = 1;
+
+    HRESULT hresult = {};
+    D3D_FEATURE_LEVEL level = {};
+    hresult = D3D11CreateDeviceAndSwapChain(
+        nullptr,
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        D3D11_SDK_VERSION,
+        &desc,
+        &MyDirectX::swapChain,
+        &MyDirectX::device_,
+        &level,
+        &MyDirectX::context_
+    );
+
+    if (FAILED(hresult)) {
+        MessageBox(hwnd, L"DirectXの初期化に失敗したよ", NULL, MB_OK);
+        return -1;
+    }
+
+    MyDirectX::swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&MyDirectX::texture2D);
+
+
+    MyDirectX::device_->CreateRenderTargetView(MyDirectX::texture2D, nullptr, &MyDirectX::renderTargetView);
+    MyDirectX::texture2D->Release();
+
+    if (FAILED(hresult)) {
+        MessageBox(hwnd, L"DirectXの初期化に失敗したよ", NULL, MB_OK);
+        return -1;
+    }
+    
     return 0;
 }
