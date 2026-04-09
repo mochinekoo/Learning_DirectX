@@ -116,15 +116,15 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
 
 int initDirectX(HWND hwnd) {
     DXGI_SWAP_CHAIN_DESC desc = {};
-    desc.BufferDesc.Width = WINDOW_WIDTH;
-    desc.BufferDesc.Height = WINDOW_HEIGHT;
-    desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    desc.Windowed = TRUE;
-    desc.OutputWindow = hwnd;
-    desc.BufferCount = 1;
+    desc.BufferDesc.Width = WINDOW_WIDTH; //画面の幅
+    desc.BufferDesc.Height = WINDOW_HEIGHT; //画面の幅
+    desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; //各8ビットずつの色
+    desc.Windowed = TRUE; //ウインドウモード
+    desc.OutputWindow = hwnd; //出力するウインドウ
+    desc.BufferCount = 1; //バファー（裏画面）の数
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.SampleDesc.Count = 1;
-    desc.SampleDesc.Quality = 0;
+    desc.SampleDesc.Count = 1; //サンプル数
+    desc.SampleDesc.Quality = 0; //品質レベル
     desc.BufferDesc.RefreshRate.Numerator = 60;
     desc.BufferDesc.RefreshRate.Denominator = 1;
 
@@ -155,7 +155,7 @@ int initDirectX(HWND hwnd) {
 
 
     MyDirectX::device_->CreateRenderTargetView(MyDirectX::texture2D, nullptr, &MyDirectX::renderTargetView);
-    MyDirectX::texture2D->Release();
+    MyDirectX::texture2D->Release(); //メモリーを開放する
 
     if (FAILED(hresult)) {
         MessageBox(hwnd, L"DirectXの初期化に失敗したよ", NULL, MB_OK);
