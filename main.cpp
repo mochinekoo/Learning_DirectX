@@ -4,7 +4,11 @@
 #include <DirectXMath.h>
 #include <d2d1.h>
 #include <dwrite.h>
-
+#include "dinput.h"
+#include "input.h"
+#include <cstdio>
+#pragma comment(lib , "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d2d1.lib") 
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -90,9 +94,11 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
     if (initDirectX(hwnd)) {
         return -1;
     }
-
+   
     ShowWindow(hwnd, nShowCmd); //ウインドウを表示
     UpdateWindow(hwnd);
+
+    Input::initKey(hInstance, hwnd);
 
     //メッセージ
     MSG msg = {};
@@ -108,6 +114,13 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             MyDirectX::context_->ClearRenderTargetView(MyDirectX::renderTargetView, color);
             onRender();
             MyDirectX::swapChain->Present(1, 0);
+
+            Input::SetInputState();
+            if (Input::GetInputState(DIK_W)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                break;
+            }
         }
     }
 
