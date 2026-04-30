@@ -7,6 +7,9 @@
 #include "dinput.h"
 #include "input.h"
 #include <cstdio>
+#include "MyDirectX.h"
+#include "Triangle.h"
+using namespace MyDirectX;
 #pragma comment(lib , "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d2d1.lib") 
@@ -17,20 +20,8 @@
 namespace {
     const int WINDOW_WIDTH = 1280;
     const int WINDOW_HEIGHT = 720;
-}
-
-namespace MyDirectX {
-    ID3D11Device* device_ = nullptr;
-    ID3D11DeviceContext* context_ = nullptr;
-    IDXGISwapChain* swapChain = nullptr;
-    ID3D11RenderTargetView* renderTargetView = nullptr;
-    ID3D11Texture2D* texture2D = nullptr;
-
-    ID2D1Factory* d2dFactory = nullptr; 
-    IDWriteFactory* dwriteFactory = nullptr; 
-    ID2D1RenderTarget* d2dRenderTarget = nullptr; 
-    ID2D1SolidColorBrush* brush = nullptr; 
-    IDWriteTextFormat* textFormat = nullptr;
+    Triangle* triangle = nullptr;
+    Triangle* triangle2 = nullptr;
 }
 
 int CreateTextDevice();
@@ -94,6 +85,17 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
     if (initDirectX(hwnd)) {
         return -1;
     }
+    triangle = new Triangle(
+        -0.5f, 0.5f,
+        0.5f, 0.5f,
+        0.5f, -0.5f);
+    triangle->Initialize();
+
+    triangle2 = new Triangle(
+        -1.0f, 0.5f,
+        -0.6f, 0.5f,
+        -0.6f, -0.5f);
+    triangle2->Initialize();
    
     ShowWindow(hwnd, nShowCmd); //ウインドウを表示
     UpdateWindow(hwnd);
@@ -112,7 +114,10 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
 
             MyDirectX::context_->OMSetRenderTargets(1, &MyDirectX::renderTargetView, nullptr);
             MyDirectX::context_->ClearRenderTargetView(MyDirectX::renderTargetView, color);
-            onRender();
+            //onRender();
+            triangle->Draw();
+            triangle2->Draw();
+
             MyDirectX::swapChain->Present(1, 0);
 
             Input::SetInputState();
@@ -136,7 +141,7 @@ int initDirectX(HWND hwnd) {
     desc.OutputWindow = hwnd; //出力するウインドウ
     desc.BufferCount = 1; //バファー（裏画面）の数
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.SampleDesc.Count = 1; //サンプル数
+    desc.SampleDesc.Count = 4; //サンプル数
     desc.SampleDesc.Quality = 0; //品質レベル
     desc.BufferDesc.RefreshRate.Numerator = 60;
     desc.BufferDesc.RefreshRate.Denominator = 1;
@@ -167,52 +172,48 @@ int initDirectX(HWND hwnd) {
     MyDirectX::swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&MyDirectX::texture2D);
 
 
-    MyDirectX::device_->CreateRenderTargetView(MyDirectX::texture2D, nullptr, &MyDirectX::renderTargetView);
+    hresult = MyDirectX::device_->CreateRenderTargetView(MyDirectX::texture2D, nullptr, &MyDirectX::renderTargetView);
     MyDirectX::texture2D->Release(); //メモリーを開放する
 
-    if (FAILED(hresult)) {
-        MessageBox(hwnd, L"DirectXの初期化に失敗したよ", NULL, MB_OK);
-        return -1;
-    }
+    assert(SUCCEEDED(hresult));
 
     CreateTextDevice();
 
-    HRESULT hr = S_OK;
-
     IDXGISurface* pBackBuffer = nullptr;
-    hr = MyDirectX::swapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-    if (FAILED(hr)) {
-        MessageBox(hwnd, L"バックバッファ取得失敗", L"エラー", MB_OK);
-        return -1;
-    }
+    hresult = MyDirectX::swapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+    assert(SUCCEEDED(hresult));
 
     D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
         D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED)
     );
 
-    hr = MyDirectX::d2dFactory->CreateDxgiSurfaceRenderTarget(
+    hresult = MyDirectX::d2dFactory->CreateDxgiSurfaceRenderTarget(
         pBackBuffer,
         &props,
         &MyDirectX::d2dRenderTarget
     );
+    assert(SUCCEEDED(hresult));
 
     pBackBuffer->Release();
 
-    if (FAILED(hr)) {
-        MessageBox(hwnd, L"Direct2D RenderTarget作成失敗", L"エラー", MB_OK);
-        return -1;
-    }
-
-    hr = MyDirectX::d2dRenderTarget->CreateSolidColorBrush(
+    hresult = MyDirectX::d2dRenderTarget->CreateSolidColorBrush(
         D2D1::ColorF(D2D1::ColorF::White),
         &MyDirectX::brush
     );
+    assert(SUCCEEDED(hresult));
 
-    if (FAILED(hr)) {
-        MessageBox(hwnd, L"ブラシ作成失敗", L"エラー", MB_OK);
-        return -1;
-    }
+    D3D11_VIEWPORT viewport = {};
+    viewport.Width = WINDOW_WIDTH;
+    viewport.Height = WINDOW_HEIGHT;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    context_->RSSetViewports(1, &viewport);
+
+
+    MyDirectX::initialize();
     
     return 0;
 }
