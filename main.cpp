@@ -115,6 +115,8 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             MyDirectX::context_->OMSetRenderTargets(1, &MyDirectX::renderTargetView, nullptr);
             MyDirectX::context_->ClearRenderTargetView(MyDirectX::renderTargetView, color);
             //onRender();
+            triangle->Update();
+            triangle2->Update();
             triangle->Draw();
             triangle2->Draw();
 

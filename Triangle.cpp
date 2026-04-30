@@ -1,6 +1,7 @@
 #include "Triangle.h"
 #include "BaseObject.h"
 #include "MyDirectX.h"
+#include "input.h"
 
 using namespace MyDirectX;
 
@@ -31,8 +32,18 @@ void Triangle::Initialize() {
 	device_->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
 }
 
-void Triangle::Update()
-{
+void Triangle::Update() {
+	if (Input::GetInputState(DIK_E)) {
+		vertices[0].y += 0.01f;
+		vertices[1].y += 0.01f;
+		vertices[2].y += 0.01f;
+	}
+	if (Input::GetInputState(DIK_D)) {
+		vertices[0].y -= 0.01f;
+		vertices[1].y -= 0.01f;
+		vertices[2].y -= 0.01f;
+	}
+	context_->UpdateSubresource(vertexBuffer, 0, nullptr, vertices, 0, 0);
 }
 
 void Triangle::Draw() {
