@@ -129,12 +129,14 @@
   <ItemGroup>
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
     <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseObject.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="MyDirectX.h" />
+    <ClInclude Include="SoundManager.h" />
     <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <ItemGroup>

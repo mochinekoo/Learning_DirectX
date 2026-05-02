@@ -9,6 +9,7 @@
 #include <cstdio>
 #include "MyDirectX.h"
 #include "Triangle.h"
+#include "SoundManager.h"
 using namespace MyDirectX;
 #pragma comment(lib , "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -101,6 +102,9 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
     UpdateWindow(hwnd);
 
     Input::initKey(hInstance, hwnd);
+    SoundManager::initialize();
+    WaveData data = {};
+    SoundManager::Play(L"Past_Memories.wav", &data, true);
 
     //メッセージ
     MSG msg = {};
@@ -123,6 +127,14 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             MyDirectX::swapChain->Present(1, 0);
 
             Input::SetInputState();
+
+           
+            if (SoundManager::sourceVoice != nullptr) {
+                if ((SoundManager::state.BuffersQueued > 0) != 0) {
+                    SoundManager::sourceVoice->GetState(&SoundManager::state);
+                }
+            }
+
             if (Input::GetInputState(DIK_W)) {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
