@@ -105,6 +105,8 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
     SoundManager::initialize();
     WaveData data = {};
     SoundManager::Play(L"Past_Memories.wav", &data, true);
+    WaveData data2 = {};
+    SoundManager::Play(L"aaaa.wav", &data2, true);
 
     //メッセージ
     MSG msg = {};
@@ -129,11 +131,16 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             Input::SetInputState();
 
            
-            if (SoundManager::sourceVoice != nullptr) {
-                if ((SoundManager::state.BuffersQueued > 0) != 0) {
-                    SoundManager::sourceVoice->GetState(&SoundManager::state);
+            if (SoundManager::audioList.size() > 0) {
+                for (SoundData soundData : SoundManager::audioList) {
+                    if (soundData.sourceVoice != nullptr) {
+                        if ((soundData.state.BuffersQueued > 0) != 0) {
+                            soundData.sourceVoice->GetState(&soundData.state);
+                        }
+                    }
                 }
             }
+
 
             if (Input::GetInputState(DIK_W)) {
                 TranslateMessage(&msg);

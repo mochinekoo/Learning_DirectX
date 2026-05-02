@@ -100,7 +100,8 @@ bool SoundManager::Play(const std::wstring& fileName, WaveData* data, bool loop)
     WAVEFORMATEX waveFormat = {};
     memcpy_s(&waveFormat, sizeof(WAVEFORMATEX), &data->waveFormat, sizeof(data->waveFormat));
     waveFormat.wBitsPerSample = data->waveFormat.nBlockAlign * 8 / data->waveFormat.nChannels;
-    HRESULT result = xaudio->CreateSourceVoice(&sourceVoice, (WAVEFORMATEX*) &waveFormat);
+    SoundData soundData = {};
+    HRESULT result = xaudio->CreateSourceVoice(&soundData.sourceVoice, (WAVEFORMATEX*) &waveFormat);
     assert(SUCCEEDED(result));
 
     XAUDIO2_BUFFER xAudio2Buffer = {};
@@ -109,16 +110,18 @@ bool SoundManager::Play(const std::wstring& fileName, WaveData* data, bool loop)
     xAudio2Buffer.AudioBytes = data->size;
 
     xAudio2Buffer.LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
-    sourceVoice->SubmitSourceBuffer(&xAudio2Buffer);
+    soundData.sourceVoice->SubmitSourceBuffer(&xAudio2Buffer);
 
-    result = sourceVoice->Start();
+    result = soundData.sourceVoice->Start();
     assert(SUCCEEDED(result));
+
+    audioList.push_back(soundData);
     return true;
 }
 
-void SoundManager::Stop() {
-    sourceVoice->Stop();
-    sourceVoice->FlushSourceBuffers();
+void SoundManager::Stop(int index) {
+    audioList[index].sourceVoice->Stop();
+    audioList[index].sourceVoice->FlushSourceBuffers();
 }
 
 void SoundManager::Release()
