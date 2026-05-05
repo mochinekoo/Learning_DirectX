@@ -9,7 +9,9 @@
 #include <cstdio>
 #include "MyDirectX.h"
 #include "Triangle.h"
+#include "Square.h"
 #include "SoundManager.h"
+#include "Image.h"
 using namespace MyDirectX;
 #pragma comment(lib , "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -23,6 +25,8 @@ namespace {
     const int WINDOW_HEIGHT = 720;
     Triangle* triangle = nullptr;
     Triangle* triangle2 = nullptr;
+	Square* square = nullptr;
+	Image* image = nullptr;
 }
 
 int CreateTextDevice();
@@ -86,6 +90,10 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
     if (initDirectX(hwnd)) {
         return -1;
     }
+	HRESULT result = {};
+    result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    assert(SUCCEEDED(result));
+
     triangle = new Triangle(
         -0.5f, 0.5f,
         0.5f, 0.5f,
@@ -97,6 +105,19 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
         -0.6f, 0.5f,
         -0.6f, -0.5f);
     triangle2->Initialize();
+
+    square = new Square(
+        -0.5f, 0.5f,
+		1.0f, 1.0f
+    );
+	square->Initialize();
+
+    image = new Image(
+        "eyrereyyre.PNG",
+		0.0f, 0.0f,
+        1.0f, 1.0f
+    );
+    image->Initialize();
    
     ShowWindow(hwnd, nShowCmd); //ウインドウを表示
     UpdateWindow(hwnd);
@@ -123,8 +144,10 @@ int initWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, in
             //onRender();
             triangle->Update();
             triangle2->Update();
-            triangle->Draw();
-            triangle2->Draw();
+            //triangle->Draw();
+            //triangle2->Draw();
+			//square->Draw();
+			image->Draw();
 
             MyDirectX::swapChain->Present(1, 0);
 
@@ -162,7 +185,7 @@ int initDirectX(HWND hwnd) {
     desc.OutputWindow = hwnd; //出力するウインドウ
     desc.BufferCount = 1; //バファー（裏画面）の数
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.SampleDesc.Count = 4; //サンプル数
+    desc.SampleDesc.Count = 1; //サンプル数
     desc.SampleDesc.Quality = 0; //品質レベル
     desc.BufferDesc.RefreshRate.Numerator = 60;
     desc.BufferDesc.RefreshRate.Denominator = 1;
