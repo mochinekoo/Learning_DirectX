@@ -8,8 +8,6 @@
 
 HRESULT SoundManager::initialize() {
     HRESULT result;
-    result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    assert(SUCCEEDED(result));
     result = XAudio2Create(&xaudio);
     assert(SUCCEEDED(result));
     result = xaudio->CreateMasteringVoice(&masteringVoice);
